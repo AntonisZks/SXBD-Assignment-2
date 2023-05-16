@@ -26,7 +26,7 @@ def findTrips(x, a, b):
 
     q1 = f"""SELECT tp.cost_per_person, tp.max_num_participants, COUNT(r.Reservation_id), (tp.max_num_participants - COUNT(r.Reservation_id)), tp.trip_start, tp.trip_end
              FROM trip_package tp, reservation r
-             WHERE tp.trip_package_id = {x} AND tp.trip_start >= '{a}' AND tp.trip_end <= '{b}' AND tp.trip_package_id = r.offer_trip_package_id
+             WHERE tp.trip_package_id = {x} AND tp.trip_start >= '{a}' AND tp.trip_start <= '{b}' AND tp.trip_package_id = r.offer_trip_package_id
              GROUP BY tp.cost_per_person, tp.max_num_participants, tp.trip_start, tp.trip_end;"""
     try:
         cursor.execute(q1)
