@@ -1,7 +1,4 @@
-SELECT *
-FROM destination;
-
-# Question 1
+-- Question 1
 SELECT em.name
 FROM employees em, travel_guide tg, guided_tour gt, trip_package tp, trip_package_has_destination tphd, destination d
 WHERE em.employees_AM = tg.travel_guide_employee_AM 

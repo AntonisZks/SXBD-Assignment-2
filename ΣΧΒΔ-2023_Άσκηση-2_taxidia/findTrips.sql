@@ -1,4 +1,4 @@
-# Query 1 | trip_package_id: 1, trip_start: 2019-06-01, trip_end: 2022-09-12
+-- Query 1 | trip_package_id: 1, trip_start: 2019-06-01, trip_end: 2022-09-12
 SELECT tp.cost_per_person, tp.max_num_participants, count(r.Reservation_id) AS reservations,
 	   (tp.max_num_participants - count(r.Reservation_id)) AS empty_seats, tp.trip_start, tp.trip_end
 FROM trip_package tp, reservation r
