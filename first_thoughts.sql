@@ -54,7 +54,23 @@ FROM
 GROUP BY travel_guide_employee_AM
 HAVING languages = 1;
 
-
+SELECT e.name, e.surname
+FROM
+	(
+	SELECT travel_guide_tour_languages.travel_guide_employee_AM, 
+		   COUNT(travel_guide_tour_languages.travel_guide_language_id) as languages
+	FROM
+		(
+		SELECT DISTINCT tg.travel_guide_employee_AM, gt.travel_guide_language_id
+		FROM travel_guide tg, travel_guide_has_languages tghl, guided_tour gt
+		WHERE tg.travel_guide_employee_AM = tghl.travel_guide_employee_AM
+		  AND tghl.travel_guide_employee_AM = gt.travel_guide_employee_AM
+		ORDER BY tg.travel_guide_employee_AM
+		) travel_guide_tour_languages
+	GROUP BY travel_guide_employee_AM
+	HAVING languages = 1
+	) final_travel_guides, employees e
+WHERE e.employees_AM = final_travel_guides.travel_guide_employee_AM;
 
 /* 6. Ελέγξτε αν υπήρξε προσφορά μέσα στο έτος 2020 η οποία δεν χρησιμοποιήθηκε από κανέναν. Το ερώτημα θα πρέπει να επιστρέφει ως απάντηση μια σχέση με μια
 πλειάδα και μια στήλη με τιμή “yes” ή “no”). Απαγορεύεται η χρήση Flow Control Operators (δηλαδή, if, case, κ.λπ.).*/
