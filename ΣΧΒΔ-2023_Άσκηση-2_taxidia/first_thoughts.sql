@@ -40,20 +40,6 @@ GROUP BY tp.trip_package_id
 ORDER BY tp.trip_package_id;
 
 /* 5. Βρείτε τους ξεναγούς που έχουν κάνει όλες τις ξεναγήσεις στην ίδια γλώσσα. */
-SELECT travel_guide_employee_AM, COUNT(name) AS languages
-FROM
-	(
-	SELECT tg.travel_guide_employee_AM, l.name
-	FROM travel_guide tg, travel_guide_has_languages tghl, languages l, guided_tour gt
-	WHERE tg.travel_guide_employee_AM = tghl.travel_guide_employee_AM
-		AND tghl.languages_id = l.languages_id
-		AND tg.travel_guide_employee_AM = gt.travel_guide_employee_AM
-	GROUP BY tg.travel_guide_employee_AM, l.name
-	ORDER BY tg.travel_guide_employee_AM
-	) travel_guides_languages
-GROUP BY travel_guide_employee_AM
-HAVING languages = 1;
-
 SELECT e.name, e.surname
 FROM
 	(
@@ -62,7 +48,7 @@ FROM
 	FROM
 		(
 		SELECT DISTINCT tg.travel_guide_employee_AM, gt.travel_guide_language_id
-		FROM travel_guide tg, travel_guide_has_languages tghl, guided_tour gt
+		FROM travel_guide tg, guided_tour gt
 		WHERE tg.travel_guide_employee_AM = gt.travel_guide_employee_AM
 		ORDER BY tg.travel_guide_employee_AM
 		) travel_guide_tour_languages
