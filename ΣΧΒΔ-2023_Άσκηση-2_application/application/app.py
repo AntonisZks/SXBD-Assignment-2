@@ -25,19 +25,19 @@ def findTrips(x, a, b):
     cursor = database.cursor()
 
     q1 = f"""SELECT tp.cost_per_person, tp.max_num_participants, 
-                 COUNT(*) as reservations, (tp.max_num_participants - COUNT(*)) as empty_seats,
-                 CONCAT(e.name, ' ', e.surname) AS driver, tp.trip_start, tp.trip_end
-             FROM reservation r 
-                 JOIN travel_agency_branch tab ON r.travel_agency_branch_id = tab.travel_agency_branch_id
-                 JOIN trip_package tp ON r.offer_trip_package_id = tp.trip_package_id
-                 JOIN employees e ON e.travel_agency_branch_travel_agency_branch_id = tab.travel_agency_branch_id
-                 JOIN drivers d ON d.driver_employee_AM = e.employees_AM
-             WHERE tab.travel_agency_branch_id = {x} AND tp.trip_start BETWEEN '{a}' AND '{b}'
-             GROUP BY tp.trip_package_id, tp.cost_per_person, tp.max_num_participants, d.driver_employee_AM, tp.trip_start, tp.trip_end"""
+	            COUNT(*) as reservations, (tp.max_num_participants - COUNT(*)) as empty_seats,
+	            CONCAT(e.name, ' ', e.surname) AS travel_guide, tp.trip_start, tp.trip_end
+            FROM reservation r, travel_agency_branch tab, trip_package tp, employees e, travel_guide tg
+            WHERE r.travel_agency_branch_id = tab.travel_agency_branch_id 
+                AND r.offer_trip_package_id = tp.trip_package_id
+                AND e.travel_agency_branch_travel_agency_branch_id = tab.travel_agency_branch_id
+                AND tg.travel_guide_employee_AM = e.employees_AM
+                AND tab.travel_agency_branch_id = {x} AND tp.trip_start >= '{a}' AND tp.trip_start <= '{b}'
+            GROUP BY tp.trip_package_id, tp.cost_per_person, tp.max_num_participants, tg.travel_guide_employee_AM, tp.trip_start, tp.trip_end;"""
     try:
         cursor.execute(q1)
         results = list(cursor.fetchall())
-        results.insert(0, ("cost_per_person", "max_num_participants", "reservations", "empty_seats", "driver", "trip_start", "trip_end"))
+        results.insert(0, ("cost_per_person", "max_num_participants", "reservations", "empty_seats", "travel_guide", "trip_start", "trip_end"))
         return results
     except:
         print("Error: unable to fetch data")
