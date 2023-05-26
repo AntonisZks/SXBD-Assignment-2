@@ -3,6 +3,7 @@ import lib.pymysql as db
 import settings
 import sys
 import os
+import random
 sys.path.append(os.path.join(os.path.split(
     os.path.abspath(__file__))[0], 'lib'))
 
@@ -186,9 +187,63 @@ def bestClient(x):
 
 def giveAway(N):
     # Create a new connection
-    con = connection()
-
+    database = connection()
     # Create a cursor on the connection
-    cur = con.cursor()
+    cursor = database.cursor()
+
+    travelers_ids_query = "SELECT t.traveler_id FROM traveler t;"
+
+    cursor.execute(travelers_ids_query)
+    travelers_ids = cursor.fetchall()
+    travelers_ids_list = []
+    for i in range(len(travelers_ids)):
+        travelers_ids_list.append(travelers_ids[i][0])
+
+    random_travelers_ids = random.sample(travelers_ids_list, int(N))
+
+    all_package_ids_query = "SELECT tp.trip_package_id, tp.cost_per_person FROM trip_package tp;"
+    cursor.execute(all_package_ids_query)
+    all_package_ids = list(cursor.fetchall())
+    final_package_ids = []
+    costs = []
+    j = 0
+    for i in random_travelers_ids:
+        traveler_package_ids_query = f"""SELECT DISTINCT tp.trip_package_id, tp.cost_per_person
+                                        FROM trip_package tp, reservation r, traveler t
+                                        WHERE r.offer_trip_package_id = tp.trip_package_id
+                                        AND r.Customer_id = {i};"""
+        cursor.execute(traveler_package_ids_query)
+        traveler_package_ids = list(cursor.fetchall())
+
+        valid_package_ids = [item for item in all_package_ids if item not in traveler_package_ids]
+        done = False
+        while not done:
+            traveler_package_id = valid_package_ids[random.randint(0, len(valid_package_ids))]
+            if traveler_package_id not in final_package_ids:
+                final_package_ids.append(traveler_package_id)
+                done = True
+
+        traveler_reservations_query = f"""SELECT t.traveler_id, COUNT(r.Reservation_id) AS reservations
+                                          FROM traveler t, reservation r
+                                          WHERE r.Customer_id = t.traveler_id
+                                            AND t.traveler_id = {i}
+                                          GROUP BY t.traveler_id;"""
+        cursor.execute(traveler_reservations_query)
+        traveler_reservations = cursor.fetchall()[0][1]
+
+        for t in len(final_package_ids):
+            final_package_ids[t] = list(final_package_ids[t])
+
+        print(final_package_ids)
+        if traveler_reservations > 1:
+            final_package_ids[j][1] = 0.75*final_package_ids[j][1]
+
+        costs.append(final_package_ids[j][1])
+        j += 1
+
+    print(random_travelers_ids)
+    print(final_package_ids)
+    print(costs)
+
 
     return [("string"), ]
