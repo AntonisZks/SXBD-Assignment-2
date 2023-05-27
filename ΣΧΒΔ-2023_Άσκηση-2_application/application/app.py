@@ -185,65 +185,141 @@ def bestClient(x):
     
     return result_list
 
+class LuckyPackage:
+    def __init__(self, package_id, cost_per_person, cost_category):
+        self.package_id = package_id
+        self.cost_per_person = cost_per_person
+        self.destination = "Athens" # Just for test
+        self.cost_category = cost_category
+    
+    def __str__(self):
+        result_string = f"[id: {self.package_id}, cost: {self.cost_per_person}, destination: {self.destination}, category: {self.cost_category}]"
+        return result_string
+
+class LuckyTraveler:
+    def __init__(self, traveler_id, name, surname, gender, package):
+        self.traveler_id = traveler_id
+        self.name = name
+        self.surname = surname
+        self.gender = gender
+        self.package = package
+
+    def __str__(self):
+        result_string = f"""Traveler {self.name} {self.surname} has:\n\t id: {self.traveler_id}\n\t gender: {self.gender}\n\t package: {self.package}"""
+        return result_string
+
+class Offer:
+    def __init__(self, offer_start, offer_end, cost, trip_package_id, description, offer_info_category):
+        self.offer_start = offer_start
+        self.offer_end = offer_end
+        self.cost = cost
+        self.trip_package_id = trip_package_id
+        self.description = description
+        self.offer_info_category = offer_info_category
+
+def getRandomTravelersData(N, cursor):
+    # Select all the travelers data that exist
+    cursor.execute("SELECT t.traveler_id, t.name, t.surname, t.gender FROM traveler t;")
+    travelers_data = list(cursor.fetchall())
+
+    # Select N random travelers
+    random_travelers_data = random.sample(travelers_data, int(N))
+
+    return random_travelers_data
+
+def getTravelersPackagesData(cursor, traveler_id, packages_ids_and_costs):
+    # Select all the packages ids and costs that the traveler has traveled before
+    cursor.execute(f"""SELECT DISTINCT tp.trip_package_id, tp.cost_per_person
+                        FROM trip_package tp, reservation r, traveler t
+                        WHERE r.offer_trip_package_id = tp.trip_package_id
+                            AND r.Customer_id = {traveler_id}
+                        ORDER BY tp.trip_package_id;""")
+    traveler_packages_ids_and_costs = list(cursor.fetchall())
+
+    # Choose some packages that he didn't travel before
+    valid_traveler_packages_ids_and_costs = [data for data in packages_ids_and_costs if data not in traveler_packages_ids_and_costs]
+
+    return valid_traveler_packages_ids_and_costs
+
+def fixCost(cost, cursor, traveler_id):
+    # Select the number of reservations the traveler has made
+    cursor.execute(f"""SELECT COUNT(r.Reservation_id) AS reservations
+                        FROM traveler t, reservation r
+                        WHERE r.Customer_id = t.traveler_id
+                          AND t.traveler_id = {traveler_id}
+                        GROUP BY t.traveler_id;""")
+    traveler_reservations_tuple = cursor.fetchall()
+
+    if len(traveler_reservations_tuple) > 0:
+        traveler_reservations = traveler_reservations_tuple[0][0]
+    else:
+        traveler_reservations = 0
+
+    # Fix the cost according to the traveler reservations
+    if traveler_reservations > 1:
+        cost = 0.75*cost
+        return True
+    return False
+
 def giveAway(N):
     # Create a new connection
     database = connection()
     # Create a cursor on the connection
     cursor = database.cursor()
 
-    travelers_ids_query = "SELECT t.traveler_id FROM traveler t;"
+    # Get N random travelers from the travelers table
+    random_travelers_data = getRandomTravelersData(N, cursor)
 
-    cursor.execute(travelers_ids_query)
-    travelers_ids = cursor.fetchall()
-    travelers_ids_list = []
-    for i in range(len(travelers_ids)):
-        travelers_ids_list.append(travelers_ids[i][0])
+    # Select all the packages ids and costs that exist
+    cursor.execute("SELECT tp.trip_package_id, tp.cost_per_person FROM trip_package tp;")
+    packages_data = list(cursor.fetchall())
 
-    random_travelers_ids = random.sample(travelers_ids_list, int(N))
+    # Create a list for the final packages ids and costs
+    final_packages_data = []
 
-    all_package_ids_query = "SELECT tp.trip_package_id, tp.cost_per_person FROM trip_package tp;"
-    cursor.execute(all_package_ids_query)
-    all_package_ids = list(cursor.fetchall())
-    final_package_ids = []
-    costs = []
-    j = 0
-    for i in random_travelers_ids:
-        traveler_package_ids_query = f"""SELECT DISTINCT tp.trip_package_id, tp.cost_per_person
-                                        FROM trip_package tp, reservation r, traveler t
-                                        WHERE r.offer_trip_package_id = tp.trip_package_id
-                                        AND r.Customer_id = {i};"""
-        cursor.execute(traveler_package_ids_query)
-        traveler_package_ids = list(cursor.fetchall())
+    # Define a list for all the traveleres
+    lucky_travelers = []
 
-        valid_package_ids = [item for item in all_package_ids if item not in traveler_package_ids]
-        done = False
-        while not done:
-            traveler_package_id = valid_package_ids[random.randint(0, len(valid_package_ids))]
-            if traveler_package_id not in final_package_ids:
-                final_package_ids.append(traveler_package_id)
-                done = True
+    # For each traveler choose a package with the appropriate criteria
+    for i in range(len(random_travelers_data)):
+        # First select all the valid packages (packages that the traveler hasn't traveled before)
+        traveler_packages_data = getTravelersPackagesData(cursor, random_travelers_data[i][0], packages_data)
 
-        traveler_reservations_query = f"""SELECT t.traveler_id, COUNT(r.Reservation_id) AS reservations
-                                          FROM traveler t, reservation r
-                                          WHERE r.Customer_id = t.traveler_id
-                                            AND t.traveler_id = {i}
-                                          GROUP BY t.traveler_id;"""
-        cursor.execute(traveler_reservations_query)
-        traveler_reservations = cursor.fetchall()[0][1]
+        # Check if others traveler has the same package
+        while True:
+            # Select a random package
+            random_package_data = traveler_packages_data[random.randint(0, len(traveler_packages_data)-1)]
 
-        for t in len(final_package_ids):
-            final_package_ids[t] = list(final_package_ids[t])
+            # Checking if the selected package has already been selected
+            if random_package_data not in final_packages_data:
+                final_packages_data.append(list(random_package_data))
+                break
+        
+        # Fix the costs for each package if appropriate
+        if fixCost(final_packages_data[i][1], cursor, random_travelers_data[i][0]):
+            final_packages_data[i].append("group-discount")
+        else:
+            final_packages_data[i].append("full-price")            
+        final_packages_data[i] = tuple(final_packages_data[i])
 
-        print(final_package_ids)
-        if traveler_reservations > 1:
-            final_package_ids[j][1] = 0.75*final_package_ids[j][1]
+        # Creating the Lucky package
+        lucky_package = LuckyPackage(final_packages_data[i][0], final_packages_data[i][1], final_packages_data[i][2])
 
-        costs.append(final_package_ids[j][1])
-        j += 1
-
-    print(random_travelers_ids)
-    print(final_package_ids)
-    print(costs)
-
+        # Adding the traveler to the lucky travelers list
+        lucky_travelers.append(LuckyTraveler(random_travelers_data[i][0], 
+                                             random_travelers_data[i][1], 
+                                             random_travelers_data[i][2],
+                                             random_travelers_data[i][3], 
+                                             lucky_package))
+        
+        # Create a new offer
+        new_offer = Offer("2022-01-03", "2022-01-15", 
+                          lucky_package.cost_per_person, 
+                          lucky_package.package_id, 
+                          "Happy traveler tour", 
+                          lucky_package.cost_category)
+    
+    for luck_traveler in lucky_travelers:
+        print(luck_traveler)
 
     return [("string"), ]
