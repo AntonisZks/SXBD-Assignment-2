@@ -59,12 +59,28 @@ WHERE e.employees_AM = final_travel_guides.travel_guide_employee_AM;
 
 /* 6. Ελέγξτε αν υπήρξε προσφορά μέσα στο έτος 2020 η οποία δεν χρησιμοποιήθηκε από κανέναν. Το ερώτημα θα πρέπει να επιστρέφει ως απάντηση μια σχέση με μια
 πλειάδα και μια στήλη με τιμή “yes” ή “no”). Απαγορεύεται η χρήση Flow Control Operators (δηλαδή, if, case, κ.λπ.).*/
-SELECT o.offer_id, COUNT(r.Reservation_id) as reservations
-FROM reservation r, offer o
-WHERE r.offer_id = o.offer_id
-	AND r.date >= '2020-01-01' AND r.date <= '2020-12-31'
-GROUP BY o.offer_id
-HAVING reservations = 0; -- WTF?????????????????????????????????????????????????
+SELECT DISTINCT
+    result_table.result
+FROM (
+    SELECT DISTINCT
+        'yes' AS result
+    FROM reservation r, offer o 
+    WHERE r.offer_id = o.offer_id
+        AND r.date >= '2020-01-01' 
+        AND r.date <= '2020-12-31'
+    GROUP BY o.offer_id
+    HAVING COUNT(r.Reservation_id) = 0
+
+    UNION 
+
+    SELECT DISTINCT
+        'no' AS result
+    FROM reservation r, offer o  
+    WHERE r.offer_id = o.offer_id
+        AND r.date >= '2020-01-01' AND r.date <= '2020-12-31'
+    GROUP BY o.offer_id
+    HAVING COUNT(r.Reservation_id) > 0
+) AS result_table;
 
 /* 7. Βρείτε όλους τους άντρες ταξιδιώτες που έχουν ηλικία από 40 και πάνω κι έχουν κάνει κρατήσεις σε περισσότερα από 3 ταξιδιωτικά πακέτα.*/
 SELECT t.traveler_id, t.name, t.surname
@@ -79,20 +95,6 @@ WHERE t.gender = 'male'
 GROUP BY t.traveler_id, t.name, t.surname;
 
 /* 8. Βρείτε τα ονόματα των ξεναγών που μιλάνε Αγγλικά και τον αριθμό των τουριστικών αξιοθέατων που έχει γίνει κάποια ξενάγηση από τον καθένα ξεναγό στην παραπάνω γλώσσα. */
-SELECT tg.travel_guide_employee_AM, e.name, e.surname, gt.trip_package_id, ta.tourist_attraction_id, ta.name
-FROM travel_guide tg, travel_guide_has_languages tghl, employees e, guided_tour gt, tourist_attraction ta, trip_package tp
-WHERE tg.travel_guide_employee_AM = tghl.travel_guide_employee_AM
-  AND tghl.languages_id = (
-    SELECT l.languages_id
-    FROM languages l
-    WHERE l.name = 'English'
-  )
-  AND tg.travel_guide_employee_AM = e.employees_AM
-  AND gt.travel_guide_employee_AM = tg.travel_guide_employee_AM
-  AND gt.tourist_attraction_id = ta.tourist_attraction_id
-  AND gt.trip_package_id = tp.trip_package_id
-ORDER BY tg.travel_guide_employee_AM;
-
 SELECT tg.travel_guide_employee_AM, em.name, em.surname, COUNT(ta.tourist_attraction_id) as num_of_attractions
 FROM employees em, travel_guide tg, travel_guide_has_languages tghl, tourist_attraction ta, guided_tour gt
 WHERE tg.travel_guide_employee_AM = tghl.travel_guide_employee_AM
@@ -109,13 +111,22 @@ WHERE tg.travel_guide_employee_AM = tghl.travel_guide_employee_AM
   ORDER BY tg.travel_guide_employee_AM ;
 
 /* 9. Βρείτε τη χώρα του "προορισμού" που υπάρχει σε περισσότερα ταξιδιωτικά πακέτα από οποιαδήποτε άλλη. */
-SELECT d.country, COUNT(tp.trip_package_id) as trips
+SELECT d.country
 FROM trip_package tp, trip_package_has_destination tphd, destination d
 WHERE tp.trip_package_id = tphd.trip_package_trip_package_id
   AND tphd.destination_destination_id = d.destination_id
 GROUP BY d.country
-ORDER BY trips DESC
-LIMIT 1;
+HAVING COUNT(tp.trip_package_id) = (
+    SELECT MAX(trip_count)
+    FROM (
+        SELECT COUNT(tp_inner.trip_package_id) as trip_count
+        FROM trip_package tp_inner, trip_package_has_destination tphd_inner, destination d_inner
+        WHERE tp_inner.trip_package_id = tphd_inner.trip_package_trip_package_id
+            AND tphd_inner.destination_destination_id = d_inner.destination_id
+        GROUP BY d_inner.country
+    ) as subquery
+)
+ORDER BY COUNT(tp.trip_package_id) DESC;
 
 /* 10.Βρείτε τους κωδικούς των ταξιδιωτικών πακέτων που περιλαμβάνουν όλους τους ταξιδιωτικούς προορισμούς που σχετίζονται με την Ιρλανδία. */
 SELECT DISTINCT tp.trip_package_id
