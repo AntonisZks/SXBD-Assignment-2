@@ -186,14 +186,27 @@ def bestClient(x):
     return result_list
 
 class LuckyPackage:
-    def __init__(self, package_id, cost_per_person, cost_category):
+    def __init__(self, package_id, cost_per_person, cost_category, cursor):
+        self.cursor = cursor
         self.package_id = package_id
         self.cost_per_person = cost_per_person
-        self.destination = "Athens" # Just for test
+        self.destinations = self.getDestinations(self.cursor)
         self.cost_category = cost_category
+
+    def getDestinations(self, cursor):
+        destinations = []
+        cursor.execute(f"""SELECT d.name
+                           FROM trip_package tp, trip_package_has_destination tphd, destination d
+                           WHERE tp.trip_package_id = tphd.trip_package_trip_package_id
+                             AND tphd.destination_destination_id = d.destination_id
+                             AND tp.trip_package_id = {self.package_id};""")
+        result = cursor.fetchall()
+        for i in range(len(result)):
+            destinations.append(result[i][0])
+        return destinations
     
     def __str__(self):
-        result_string = f"[id: {self.package_id}, cost: {self.cost_per_person}, destination: {self.destination}, category: {self.cost_category}]"
+        result_string = f"[id: {self.package_id}, cost: {self.cost_per_person}, destinations: {self.destinations}, category: {self.cost_category}]"
         return result_string
 
 class LuckyTraveler:
@@ -209,13 +222,20 @@ class LuckyTraveler:
         return result_string
 
 class Offer:
-    def __init__(self, offer_start, offer_end, cost, trip_package_id, description, offer_info_category):
+    def __init__(self, offer_start, offer_end, cost, trip_package_id, description, offer_info_category, cursor):
+        self.cursor = cursor
         self.offer_start = offer_start
         self.offer_end = offer_end
         self.cost = cost
         self.trip_package_id = trip_package_id
         self.description = description
         self.offer_info_category = offer_info_category
+        self.offer_id = self.getId(self.cursor)
+    
+    def getId(self, cursor):
+        cursor.execute(f"SELECT MAX(o.offer_id) FROM offer o;")
+        resent_id = cursor.fetchone()[0]
+        return resent_id + 1
 
 def getRandomTravelersData(N, cursor):
     # Select all the travelers data that exist
@@ -280,6 +300,9 @@ def giveAway(N):
     # Define a list for all the traveleres
     lucky_travelers = []
 
+    # Define the return list
+    give_away_list = []
+
     # For each traveler choose a package with the appropriate criteria
     for i in range(len(random_travelers_data)):
         # First select all the valid packages (packages that the traveler hasn't traveled before)
@@ -303,7 +326,7 @@ def giveAway(N):
         final_packages_data[i] = tuple(final_packages_data[i])
 
         # Creating the Lucky package
-        lucky_package = LuckyPackage(final_packages_data[i][0], final_packages_data[i][1], final_packages_data[i][2])
+        lucky_package = LuckyPackage(final_packages_data[i][0], final_packages_data[i][1], final_packages_data[i][2], cursor)
 
         # Adding the traveler to the lucky travelers list
         lucky_travelers.append(LuckyTraveler(random_travelers_data[i][0], 
@@ -313,13 +336,36 @@ def giveAway(N):
                                              lucky_package))
         
         # Create a new offer
-        new_offer = Offer("2022-01-03", "2022-01-15", 
+        new_offer = Offer("2023-06-15", "2023-08-15", 
                           lucky_package.cost_per_person, 
                           lucky_package.package_id, 
                           "Happy traveler tour", 
-                          lucky_package.cost_category)
+                          lucky_package.cost_category,
+                          cursor)
     
-    for luck_traveler in lucky_travelers:
-        print(luck_traveler)
+        # Insert the new offer into the offers table
+        cursor.execute(f"""INSERT INTO offer VALUES({new_offer.offer_id}, 
+                                                   '{new_offer.offer_start}', 
+                                                   '{new_offer.offer_end}', 
+                                                   {new_offer.cost}, 
+                                                   '{new_offer.description}', 
+                                                   {new_offer.trip_package_id}, 
+                                                   '{new_offer.offer_info_category}');""")
+        database.commit()
 
-    return [("string"), ]
+        # Creating the paragraph for each traveler
+        traveler = lucky_travelers[i]
+        gender_message = 'Mr' if traveler.gender == 'male' else 'Ms'
+        destinations = ""
+        for i in range(len(lucky_package.destinations)):
+            if i == 0:
+                destinations += f"{lucky_package.destinations[i]}, "
+            elif i == len(lucky_package.destinations) - 1:
+                destinations += f" and {lucky_package.destinations[i]}"
+            else:
+                destinations += f"{lucky_package.destinations[i]}, "
+        paragraph = (f"""Congratulations {gender_message} {traveler.name} {traveler.surname}! Pack your bags and get ready to enjoy the {new_offer.description}! At ART TOUR travel we acknowledge you as a valued customer and we’ve selected the most incredible tailor-made travel package for you. We offer you the chance to travel to {destinations}  at the incredible price of {new_offer.cost}. Our offer ends on {new_offer.offer_end}. Use code {new_offer.offer_id} to book your trip. Enjoy these holidays that you deserve so much!""",)
+        give_away_list.append(paragraph)
+        
+    give_away_list.insert(0, ("Lucky Travelers Day!",))
+    return give_away_list

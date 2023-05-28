@@ -118,7 +118,7 @@ ORDER BY trips DESC
 LIMIT 1;
 
 /* 10.Βρείτε τους κωδικούς των ταξιδιωτικών πακέτων που περιλαμβάνουν όλους τους ταξιδιωτικούς προορισμούς που σχετίζονται με την Ιρλανδία. */
-SELECT tp.trip_package_id
+SELECT DISTINCT tp.trip_package_id
 FROM trip_package tp, trip_package_has_destination tphd, destination d
 WHERE tp.trip_package_id = tphd.trip_package_trip_package_id
   AND tphd.destination_destination_id = d.destination_id
