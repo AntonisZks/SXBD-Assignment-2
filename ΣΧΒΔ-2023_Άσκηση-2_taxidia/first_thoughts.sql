@@ -64,8 +64,7 @@ FROM (
     SELECT DISTINCT 'yes' AS result
     FROM reservation r, offer o 
     WHERE r.offer_id = o.offer_id
-        AND r.date >= '2020-01-01' 
-        AND r.date <= '2020-12-31'
+	  AND r.date >= '2020-01-01' AND r.date <= '2020-12-31'
     GROUP BY o.offer_id
     HAVING COUNT(r.Reservation_id) = 0
 
@@ -74,7 +73,7 @@ FROM (
     SELECT DISTINCT 'no' AS result
     FROM reservation r, offer o  
     WHERE r.offer_id = o.offer_id
-        AND r.date >= '2020-01-01' AND r.date <= '2020-12-31'
+	  AND r.date >= '2020-01-01' AND r.date <= '2020-12-31'
     GROUP BY o.offer_id
     HAVING COUNT(r.Reservation_id) > 0
 ) AS result_table;
