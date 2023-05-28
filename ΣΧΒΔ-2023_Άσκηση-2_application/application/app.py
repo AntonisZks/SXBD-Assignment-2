@@ -261,7 +261,7 @@ def getTravelersPackagesData(cursor, traveler_id, packages_ids_and_costs):
 
     return valid_traveler_packages_ids_and_costs
 
-def fixCost(cost, cursor, traveler_id):
+def fixCost(data, cursor, traveler_id):
     # Select the number of reservations the traveler has made
     cursor.execute(f"""SELECT COUNT(r.Reservation_id) AS reservations
                         FROM traveler t, reservation r
@@ -277,7 +277,7 @@ def fixCost(cost, cursor, traveler_id):
 
     # Fix the cost according to the traveler reservations
     if traveler_reservations > 1:
-        cost = 0.75*cost
+        data[1] = 0.75*data[1]
         return True
     return False
 
@@ -319,7 +319,7 @@ def giveAway(N):
                 break
         
         # Fix the costs for each package if appropriate
-        if fixCost(final_packages_data[i][1], cursor, random_travelers_data[i][0]):
+        if fixCost(final_packages_data[i], cursor, random_travelers_data[i][0]):
             final_packages_data[i].append("group-discount")
         else:
             final_packages_data[i].append("full-price")            
@@ -364,7 +364,7 @@ def giveAway(N):
                 destinations += f" and {lucky_package.destinations[i]}"
             else:
                 destinations += f"{lucky_package.destinations[i]}, "
-        paragraph = (f"""Congratulations {gender_message} {traveler.name} {traveler.surname}! Pack your bags and get ready to enjoy the {new_offer.description}! At ART TOUR travel we acknowledge you as a valued customer and we’ve selected the most incredible tailor-made travel package for you. We offer you the chance to travel to {destinations}  at the incredible price of {new_offer.cost}. Our offer ends on {new_offer.offer_end}. Use code {new_offer.offer_id} to book your trip. Enjoy these holidays that you deserve so much!""",)
+        paragraph = (f"""Congratulations {gender_message} {traveler.name} {traveler.surname}! Pack your bags and get ready to enjoy the {new_offer.description}! At ART TOUR travel we acknowledge you as a valued customer and we’ve selected the most incredible tailor-made travel package for you. We offer you the chance to travel to {destinations}  at the incredible price of {new_offer.cost}$. Our offer ends on {new_offer.offer_end}. Use code {new_offer.offer_id} to book your trip. Enjoy these holidays that you deserve so much!""",)
         give_away_list.append(paragraph)
         
     give_away_list.insert(0, ("Lucky Travelers Day!",))
