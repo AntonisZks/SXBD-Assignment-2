@@ -59,11 +59,9 @@ WHERE e.employees_AM = final_travel_guides.travel_guide_employee_AM;
 
 /* 6. Ελέγξτε αν υπήρξε προσφορά μέσα στο έτος 2020 η οποία δεν χρησιμοποιήθηκε από κανέναν. Το ερώτημα θα πρέπει να επιστρέφει ως απάντηση μια σχέση με μια
 πλειάδα και μια στήλη με τιμή “yes” ή “no”). Απαγορεύεται η χρήση Flow Control Operators (δηλαδή, if, case, κ.λπ.).*/
-SELECT DISTINCT
-    result_table.result
+SELECT DISTINCT result_table.result
 FROM (
-    SELECT DISTINCT
-        'yes' AS result
+    SELECT DISTINCT 'yes' AS result
     FROM reservation r, offer o 
     WHERE r.offer_id = o.offer_id
         AND r.date >= '2020-01-01' 
@@ -73,8 +71,7 @@ FROM (
 
     UNION 
 
-    SELECT DISTINCT
-        'no' AS result
+    SELECT DISTINCT 'no' AS result
     FROM reservation r, offer o  
     WHERE r.offer_id = o.offer_id
         AND r.date >= '2020-01-01' AND r.date <= '2020-12-31'
