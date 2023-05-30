@@ -103,21 +103,20 @@ WHERE tg.travel_guide_employee_AM = tghl.travel_guide_employee_AM
 
 /* 9. Βρείτε τη χώρα του "προορισμού" που υπάρχει σε περισσότερα ταξιδιωτικά πακέτα από οποιαδήποτε άλλη. */
 SELECT d.country
-FROM trip_package tp, trip_package_has_destination tphd, destination d
-WHERE tp.trip_package_id = tphd.trip_package_trip_package_id
-  AND tphd.destination_destination_id = d.destination_id
-GROUP BY d.country
+FROM destination d, trip_package_has_destination tphd, trip_package tp
+WHERE d.destination_id = tphd.destination_destination_id
+  AND tphd.trip_package_trip_package_id = tp.trip_package_id
+GROUP BY d.destination_id
 HAVING COUNT(tp.trip_package_id) = (
-    SELECT MAX(trip_count)
+	SELECT MAX(packages)
     FROM (
-        SELECT COUNT(tp_inner.trip_package_id) as trip_count
-        FROM trip_package tp_inner, trip_package_has_destination tphd_inner, destination d_inner
-        WHERE tp_inner.trip_package_id = tphd_inner.trip_package_trip_package_id
-            AND tphd_inner.destination_destination_id = d_inner.destination_id
-        GROUP BY d_inner.country
-    ) as subquery
-)
-ORDER BY COUNT(tp.trip_package_id) DESC;
+		SELECT DISTINCT d.country, COUNT(tp.trip_package_id) AS packages
+		FROM destination d, trip_package_has_destination tphd, trip_package tp
+		WHERE d.destination_id = tphd.destination_destination_id
+          AND tphd.trip_package_trip_package_id = tp.trip_package_id
+		GROUP BY d.destination_id
+        ) destinations_packages
+    );
 
 /* 10.Βρείτε τους κωδικούς των ταξιδιωτικών πακέτων που περιλαμβάνουν όλους τους ταξιδιωτικούς προορισμούς που σχετίζονται με την Ιρλανδία. */
 SELECT DISTINCT tp.trip_package_id 
