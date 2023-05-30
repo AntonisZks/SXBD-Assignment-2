@@ -31,9 +31,10 @@ FROM trip_package tp, reservation r, trip_package_has_destination tphd, destinat
 WHERE r.offer_trip_package_id = tp.trip_package_id
   AND tp.trip_package_id = tphd.trip_package_trip_package_id
   AND tphd.destination_destination_id = d.destination_id
-  AND r.date >= '2021-01-01' AND r.date <= '2021-12-31'
+  AND tp.trip_start >= '2021-01-01' AND tp.trip_start <= '2021-12-31'
   AND d.name = 'Paris'
-GROUP BY tp.trip_package_id;
+GROUP BY tp.trip_package_id
+ORDER BY tp.trip_package_id;
 
 /* 5. Βρείτε τους ξεναγούς που έχουν κάνει όλες τις ξεναγήσεις στην ίδια γλώσσα. */
 SELECT e.name, e.surname
