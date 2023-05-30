@@ -131,8 +131,8 @@ WHERE tp.trip_package_id = tphd.trip_package_trip_package_id
   AND tphd.destination_destination_id = d.destination_id
   AND d.country = 'Ireland'
   GROUP BY tp.trip_package_id
-  HAVING count(tphd.destination_destination_id) = (
-		SELECT count(d.destination_id) as dnum
+  HAVING COUNT(tphd.destination_destination_id) = (
+		SELECT COUNT(d.destination_id) as dnum
 		FROM destination  d
 		WHERE d.country='Ireland'
   );
