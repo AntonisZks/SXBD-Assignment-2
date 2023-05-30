@@ -125,8 +125,15 @@ HAVING COUNT(tp.trip_package_id) = (
 ORDER BY COUNT(tp.trip_package_id) DESC;
 
 /* 10.Βρείτε τους κωδικούς των ταξιδιωτικών πακέτων που περιλαμβάνουν όλους τους ταξιδιωτικούς προορισμούς που σχετίζονται με την Ιρλανδία. */
-SELECT DISTINCT tp.trip_package_id
+SELECT DISTINCT tp.trip_package_id 
 FROM trip_package tp, trip_package_has_destination tphd, destination d
 WHERE tp.trip_package_id = tphd.trip_package_trip_package_id
   AND tphd.destination_destination_id = d.destination_id
-  AND d.country = 'Ireland';
+  AND d.country = 'Ireland'
+  GROUP BY tp.trip_package_id
+  HAVING count(tphd.destination_destination_id) = (
+		SELECT count(d.destination_id) as dnum
+		FROM destination  d
+		WHERE d.country='Ireland'
+  );
+  
