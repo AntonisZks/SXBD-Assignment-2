@@ -23,37 +23,45 @@ FROM
     ) trips_destinations
 WHERE travels_reserevations.travelers_reservations_id = reservations_trips.trips_reservations_id
   AND reservations_trips.trip_package_id = trips_destinations.destinations_trip_package_id
-HAVING client = 1901;
+HAVING client = 1741;
 
-SELECT cities_traveler_id AS traveler_id, name AS first_name, surname AS last_name, countries AS total_countries_visited, cities AS total_cities_visited
-FROM
-	(
-	SELECT t.traveler_id AS cities_traveler_id, t.name, t.surname, COUNT(d.name) as cities
-	FROM reservation r, traveler t, trip_package tp, trip_package_has_destination tphd, destination d
-	WHERE r.Customer_id = t.traveler_id AND r.offer_trip_package_id = tp.trip_package_id
-      AND tphd.trip_package_trip_package_id = tp.trip_package_id AND tphd.destination_destination_id = d.destination_id
-	GROUP BY traveler_id
-	) travelers_cities,
-    (
-    SELECT traveler_id AS countries_traveler_id, COUNT(country) AS countries
-	FROM
-		(
-		SELECT DISTINCT t.traveler_id, d.country
-		FROM reservation r, traveler t, trip_package tp, trip_package_has_destination tphd, destination d
-		WHERE r.Customer_id = t.traveler_id AND r.offer_trip_package_id = tp.trip_package_id
-          AND tphd.trip_package_trip_package_id = tp.trip_package_id
-          AND tphd.destination_destination_id = d.destination_id
-		) travelers_countries
-	GROUP BY traveler_id
-    ) travelers_countries
-WHERE travelers_cities.cities_traveler_id = travelers_countries.countries_traveler_id
-HAVING traveler_id = 1901;
-    
 
-SELECT t.name, t.surname, t.traveler_id, SUM(tp.cost_per_person) AS total_cost
-FROM traveler t, reservation r, trip_package tp
+
+-- Traveler Countries
+SELECT DISTINCT t.traveler_id, d.country
+FROM reservation r, traveler t, trip_package tp, trip_package_has_destination tphd, destination d
+WHERE r.Customer_id = t.traveler_id AND r.offer_trip_package_id = tp.trip_package_id
+  AND tphd.trip_package_trip_package_id = tp.trip_package_id
+  AND tphd.destination_destination_id = d.destination_id
+HAVING t.traveler_id = 1741;
+
+-- Traveler cities
+SELECT DISTINCT t.traveler_id, d.destination_id
+FROM reservation r, traveler t, trip_package tp, trip_package_has_destination tphd, destination d
+WHERE r.Customer_id = t.traveler_id AND r.offer_trip_package_id = tp.trip_package_id
+  AND tphd.trip_package_trip_package_id = tp.trip_package_id AND tphd.destination_destination_id = d.destination_id
+HAVING t.traveler_id = 1741;
+
+-- Destination's attractions
+SELECT DISTINCT t.traveler_id, ta.name
+FROM traveler t, reservation r, trip_package tp, guided_tour gt, tourist_attraction ta
 WHERE r.Customer_id = t.traveler_id
   AND r.offer_trip_package_id = tp.trip_package_id
+  AND gt.trip_package_id = tp.trip_package_id
+  AND ta.tourist_attraction_id = gt.tourist_attraction_id
+HAVING t.traveler_id = 1741;
+
+-- Traveler name and surname
+SELECT t.name, t.surname
+FROM traveler t
+WHERE t.traveler_id = 1741;
+
+
+
+SELECT t.name, t.surname, t.traveler_id, SUM(o.cost) AS total_cost
+FROM traveler t, reservation r, trip_package tp, offer o
+WHERE r.Customer_id = t.traveler_id
+AND r.offer_trip_package_id = tp.trip_package_id
+AND r.offer_id = o.offer_id
 GROUP BY t.traveler_id
-ORDER BY total_cost DESC
-LIMIT 1;
+ORDER BY total_cost DESC;
