@@ -38,41 +38,37 @@ ORDER BY tp.trip_package_id;
 
 /* 5. Βρείτε τους ξεναγούς που έχουν κάνει όλες τις ξεναγήσεις στην ίδια γλώσσα. */
 SELECT e.name, e.surname
-FROM
-	(
-	SELECT travel_guide_tour_languages.travel_guide_employee_AM, 
-		   COUNT(travel_guide_tour_languages.travel_guide_language_id) as languages
-	FROM
-		(
-		SELECT DISTINCT tg.travel_guide_employee_AM, gt.travel_guide_language_id
-		FROM travel_guide tg, guided_tour gt
-		WHERE tg.travel_guide_employee_AM = gt.travel_guide_employee_AM
-		) travel_guide_tour_languages
-	GROUP BY travel_guide_employee_AM
-	HAVING languages = 1
-	) final_travel_guides, employees e
-WHERE e.employees_AM = final_travel_guides.travel_guide_employee_AM;
+FROM travel_guide tg, guided_tour gt, employees e
+WHERE tg.travel_guide_employee_AM = gt.travel_guide_employee_AM
+  AND tg.travel_guide_employee_AM = e.employees_AM
+GROUP BY tg.travel_guide_employee_AM
+HAVING COUNT(DISTINCT gt.travel_guide_language_id) = 1;
 
 /* 6. Ελέγξτε αν υπήρξε προσφορά μέσα στο έτος 2020 η οποία δεν χρησιμοποιήθηκε από κανέναν. Το ερώτημα θα πρέπει να επιστρέφει ως απάντηση μια σχέση με μια
 πλειάδα και μια στήλη με τιμή “yes” ή “no”). Απαγορεύεται η χρήση Flow Control Operators (δηλαδή, if, case, κ.λπ.).*/
-SELECT DISTINCT result_table.result
-FROM (
-    SELECT DISTINCT 'yes' AS result
-    FROM reservation r, offer o 
-    WHERE r.offer_id = o.offer_id
-	  AND r.date >= '2020-01-01' AND r.date <= '2020-12-31'
-    GROUP BY o.offer_id
-    HAVING COUNT(r.Reservation_id) = 0
-
-    UNION 
-
-    SELECT DISTINCT 'no' AS result
-    FROM reservation r, offer o  
-    WHERE r.offer_id = o.offer_id
-	  AND r.date >= '2020-01-01' AND r.date <= '2020-12-31'
-    GROUP BY o.offer_id
-    HAVING COUNT(r.Reservation_id) > 0
-) AS result_table;
+SELECT DISTINCT 'yes' AS answer
+FROM reservation r, offer o
+WHERE r.offer_id = o.offer_id
+    AND r.date >= '2020-01-01' AND r.date <= '2020-12-31'
+    AND EXISTS (
+        SELECT o.offer_id
+        FROM reservation r, offer o
+        WHERE r.offer_id = o.offer_id
+            AND r.date >= '2020-01-01' AND r.date <= '2020-12-31'
+        GROUP BY o.offer_id
+        HAVING COUNT(r.Reservation_id) = 0)
+UNION
+SELECT DISTINCT 'no' AS answer
+FROM reservation r, offer o
+WHERE r.offer_id = o.offer_id
+    AND r.date >= '2020-01-01' AND r.date <= '2020-12-31'
+    AND NOT EXISTS (
+        SELECT o.offer_id
+        FROM reservation r, offer o
+        WHERE r.offer_id = o.offer_id
+            AND r.date >= '2020-01-01' AND r.date <= '2020-12-31'
+        GROUP BY o.offer_id
+        HAVING COUNT(r.Reservation_id) = 0);
 
 /* 7. Βρείτε όλους τους άντρες ταξιδιώτες που έχουν ηλικία από 40 και πάνω κι έχουν κάνει κρατήσεις σε περισσότερα από 3 ταξιδιωτικά πακέτα.*/
 SELECT t.name, t.surname
@@ -108,16 +104,13 @@ FROM destination d, trip_package_has_destination tphd, trip_package tp
 WHERE d.destination_id = tphd.destination_destination_id
   AND tphd.trip_package_trip_package_id = tp.trip_package_id
 GROUP BY d.destination_id
-HAVING COUNT(tp.trip_package_id) = (
-	SELECT MAX(packages)
-    FROM (
-		SELECT DISTINCT d.country, COUNT(tp.trip_package_id) AS packages
-		FROM destination d, trip_package_has_destination tphd, trip_package tp
-		WHERE d.destination_id = tphd.destination_destination_id
-          AND tphd.trip_package_trip_package_id = tp.trip_package_id
-		GROUP BY d.destination_id
-        ) destinations_packages
-    );
+HAVING COUNT(tp.trip_package_id) >= ALL(
+	SELECT COUNT(tp2.trip_package_id)
+	FROM destination d2, trip_package_has_destination tphd2,trip_package tp2 
+	WHERE d2.destination_id <> d.destination_id
+	  AND d2.destination_id = tphd2.destination_destination_id
+	  AND tphd2.trip_package_trip_package_id = tp2.trip_package_id
+	GROUP BY d2.destination_id);
 
 /* 10.Βρείτε τους κωδικούς των ταξιδιωτικών πακέτων που περιλαμβάνουν όλους τους ταξιδιωτικούς προορισμούς που σχετίζονται με την Ιρλανδία. */
 SELECT DISTINCT tp.trip_package_id 
