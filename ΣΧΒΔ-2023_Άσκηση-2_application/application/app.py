@@ -41,17 +41,11 @@ def findTrips(x, a, b):
         package_data = list(package_data)
         package_id = package_data[0]
         travel_guides_query = f"""SELECT DISTINCT e.name, e.surname
-                                 FROM travel_agency_branch tab, reservation r, trip_package tp, trip_package_has_destination tphd, 
-                                     destination d, tourist_attraction ta, guided_tour gt, travel_guide tg, employees e
-                                 WHERE r.travel_agency_branch_id = tab.travel_agency_branch_id
-                                   AND r.offer_trip_package_id = tp.trip_package_id
-                                   AND tp.trip_package_id = tphd.trip_package_trip_package_id
-                                   AND tphd.destination_destination_id = d.destination_id
-                                   AND ta.destination_destination_id = d.destination_id
-                                   AND gt.tourist_attraction_id = ta.tourist_attraction_id
-                                   AND tg.travel_guide_employee_AM = gt.travel_guide_employee_AM
-                                   AND tg.travel_guide_employee_AM = e.employees_AM
-                                   AND tab.travel_agency_branch_id = {x} AND tp.trip_package_id = {package_id};"""
+                                  FROM guided_tour gt, employees e, travel_agency_branch tab, reservation r
+                                  WHERE gt.travel_guide_employee_AM = e.employees_AM
+                                    AND tab.travel_agency_branch_id = r.travel_agency_branch_id
+                                    AND r.offer_trip_package_id = gt.trip_package_id
+                                    AND tab.travel_agency_branch_id = {x} AND gt.trip_package_id = {package_id};"""
         cursor.execute(travel_guides_query)
         travel_guides = cursor.fetchall()
         package_data.pop(0)
